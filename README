@@ -1,0 +1,68 @@
+Useful documentation:
+https://www.gnu.org/software/gsl/doc/html/interp.html
+https://www.fftw.org/index.html 
+
+If there are ever problems with downloading extensions, libraries, or running the program, it is probbably a security thing. 
+please temporarily disable it on your computer or add the necessary exceptions to your security software/antivirus
+
+VS Code Extensions:
+    - C/C++ Extension Pack
+    - C/C++ Compile Run
+        - Follow steps on this to download TDM-GCC-64 for compiler. Do this step before moving forward.
+            - Make sure that the path to download TDM is C:/<your path to code>/Mat_2_C/Compile_Stuff/TDM-GCC-64
+        - When installing TDM, there is a page with a dropdown to choose how to install. On that page:
+            - Select C/C++ option from dropdown to install
+            - Go to the gcc branch in the box below and expand it
+            - Scroll down and check openmp
+
+Necessary downloads:
+
+MATLAB
+    - Have it fully downloaded, logged in, and working (doesn't have to be running)
+TDM-GCC
+    - Follow instructions above
+
+Note: All libraries are using x64 
+
+For program to work on your computer:
+
+    - Go to ./.vscode/tasks.json and edit the "env" "PATH" of the 'Run Matlab Visual Script' to match you computer
+    - Go to ./Compile_Stuff/TDM-GCC-64/bin and edit path to the TDM compiler
+    - Add your background data and normal data in the Input folder
+    - Go to ./Input/input.txt and change the first line to match your path to the 'Input' directory
+    - Go to ./Input/input.txt and change the second line to match what your .mat files are called
+    - Go to ./Input/input.txt and change the third line to match what your background data is called
+    - Press Ctr-Shft-B to use vs code tasks that compile and run the program. tasks.json explains how to use the terminal
+    - Please don't have any other software/programs running while this is running, as it is ram intensive (atleast 40 GB needed (testing used DDR4 3200)).
+    - Before running the program, modify the "#define" variables at the top of translation.c to match your setup. 
+        - DO NOT CHANGE ANYTHING ELSE IN THAT FILE
+    - The images produced by the matlab script when run via vs code tasks aren't interactable, run the script through matlab if you want to zoom in and stuff
+        - go through the different images via clicking or key pressing
+        - matlab doesn't have to be running
+
+
+If code isn't working:
+    - delete the msys64 folder in ./Compile_Stuff
+    - https://www.msys2.org/
+    - download installer and run
+    - choose installation folder (C:/<your path to code>/Mat_2_C/Compile_Stuff/msys64)
+    - once downloaded, run UCRT64 shell
+    - pacman -Syu
+        - If it asks you to close terminal to complete installation, close then reopen terminal and run the command again
+    - pacman -S mingw-w64-x86_64-gsl
+    - pacman -S git
+    - pacman -S mingw-w64-ucrt-x86_64-zlib
+    - git clone git://git.code.sf.net/p/matio/matio
+    - cd matio
+    - git submodule update --init
+    - export PATH="/c/<your path to code>/Mat_2_C/Compile_Stuff/TDM-GCC-64/bin:$PATH"
+    - pacman -S libtool
+    - pacman -S automake
+    - pacman -S autoconf m4
+    - pacman -S make
+    - ./autogen.sh
+    - ./configure
+    - make
+    - make check
+    - make install
+    - Can close terminal
