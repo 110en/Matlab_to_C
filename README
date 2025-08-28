@@ -9,7 +9,7 @@ VS Code Extensions:
     - C/C++ Extension Pack
     - C/C++ Compile Run
         - Follow steps on this to download TDM-GCC-64 for compiler. Do this step before moving forward.
-            - Make sure that the path to download TDM is C:/<your path to code>/Mat_2_C/Compile_Stuff/TDM-GCC-64
+            - Make sure that the path to download TDM is C:/<your path to code>/Matlab_to_C/Compile_Stuff/TDM-GCC-64
         - When installing TDM, there is a page with a dropdown to choose how to install. On that page:
             - Select C/C++ option from dropdown to install
             - Go to the gcc branch in the box below and expand it
@@ -45,7 +45,7 @@ If code isn't working:
     - delete the msys64 folder in ./Compile_Stuff
     - https://www.msys2.org/
     - download installer and run
-    - choose installation folder (C:/<your path to code>/Mat_2_C/Compile_Stuff/msys64)
+    - choose installation folder (C:/<your path to code>/Matlab_to_C/Compile_Stuff/msys64)
     - once downloaded, run UCRT64 shell
     - pacman -Syu
         - If it asks you to close terminal to complete installation, close then reopen terminal and run the command again
@@ -55,7 +55,7 @@ If code isn't working:
     - git clone git://git.code.sf.net/p/matio/matio
     - cd matio
     - git submodule update --init
-    - export PATH="/c/<your path to code>/Mat_2_C/Compile_Stuff/TDM-GCC-64/bin:$PATH"
+    - export PATH="/c/<your path to code>/Matlab_to_C/Compile_Stuff/TDM-GCC-64/bin:$PATH"
     - pacman -S libtool
     - pacman -S automake
     - pacman -S autoconf m4
