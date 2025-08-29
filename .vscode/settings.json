@@ -1,0 +1,12 @@
+{
+    "files.associations": {
+        "*.h": "c",
+        "cstdlib": "c",
+        "array": "c",
+        "string_view": "c",
+        "initializer_list": "c",
+        "ranges": "c",
+        "utility": "c"
+    },
+    "makefile.configureOnOpen": false
+}
