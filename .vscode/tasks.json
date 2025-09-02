@@ -1,0 +1,132 @@
+/* 
+If not using vs code tasks (please use vs code, terminal is so weird when it comes to PATH), copy-paste these into terminal (depending on your shell):
+
+powershell:
+
+$env:PATH = ".\\Compile_Stuff\\lib;.\\Compile_Stuff\\msys64\\mingw64\\bin;.\\Compile_Stuff\\msys64\\ucrt64\\bin;.\\Compile_Stuff\\TDM-GCC-64\\bin;$env:PATH"
+
+$gccArgs = @(
+    "translation.c"
+    "-o", "translation.exe"
+    "-I.\\Compile_Stuff\\include"
+    "-I.\\Compile_Stuff\\msys64\\mingw64\\include"
+    "-I.\\Compile_Stuff\\msys64\\ucrt64\\include"
+    "-L.\\Compile_Stuff\\lib"
+    "-L.\\Compile_Stuff\\msys64\\mingw64\\lib"
+    "-L.\\Compile_Stuff\\msys64\\ucrt64\\lib"
+    "-lmingw32"
+    "-lfftw3-3"
+    "-lgsl"
+    "-lgslcblas"
+    "-lm"
+    "-lmatio"
+    "-fopenmp"
+    "-Wl,--subsystem,console"
+)
+gcc @gccArgs
+
+Get-Content ./Input/input.txt | ./translation.exe
+
+
+command prompt:
+
+set PATH=./Compile_Stuff/lib;./Compile_Stuff/msys64/mingw64/bin;./Compile_Stuff/msys64/ucrt64/bin;./Compile_Stuff/TDM-GCC-64/bin;%PATH%
+
+gcc translation.c -o translation.exe ^
+    -I./Compile_Stuff/include ^
+    -I./Compile_Stuff/msys64/mingw64/include ^
+    -I./Compile_Stuff/msys64/ucrt64/include ^
+    -L./Compile_Stuff/lib ^
+    -L./Compile_Stuff/msys64/mingw64/lib ^
+    -L./Compile_Stuff/msys64/ucrt64/lib ^
+    -lmingw32 -lfftw3-3 -lgsl -lgslcblas -lm -lmatio ^
+    -fopenmp -Wl,--subsystem,console
+
+type ./Input/input.txt | translation.exe
+
+*/
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Run Matlab Visual Script",
+      "type": "shell",
+      "command": "matlab",
+      "args": [
+        "-batch",
+        "addpath('.\\MatLab'), Translation_image_gen"
+      ],   
+      "options": {
+        "shell": {
+          "executable": "cmd.exe",
+          "args": ["/c"]
+        },
+        "env": {
+          "PATH": "C:\\Program Files\\MATLAB\\R2024b\\bin;${env:PATH}"
+        }
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Build FFTW Project",
+      "type": "shell",
+      "command": ".\\Compile_Stuff\\TDM-GCC-64\\bin\\gcc.exe",
+      "args": [
+        "translation.c",
+        "-o", "translation.exe",
+        "-I.\\Compile_Stuff\\include",
+        "-I.\\Compile_Stuff\\msys64\\mingw64\\include",
+        "-I.\\Compile_Stuff\\msys64\\ucrt64\\include",
+        "-L.\\Compile_Stuff\\msys64\\mingw64\\lib",
+        "-L.\\Compile_Stuff\\msys64\\mingw64\\bin",
+        "-L.\\Compile_Stuff\\msys64\\ucrt64\\lib",
+        "-L.\\Compile_Stuff\\msys64\\ucrt64\\bin",
+        "-L.\\Compile_Stuff\\lib",
+        "-lmingw32",
+        "-lfftw3-3",
+        "-lgsl",
+        "-lgslcblas",
+        "-lm",
+        "-lmatio",
+        "-fopenmp",
+        "-Wl,--subsystem,console"
+      ],
+      "options": {
+        "shell": {
+          "executable": "cmd.exe",
+          "args": ["/c"]
+        }
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Run FFTW Exec",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-Command",
+        "Get-Content .\\Input\\input.txt | .\\translation.exe"
+      ],
+      "options": {
+        "env": {
+          "PATH": ".\\Compile_Stuff\\lib;.\\Compile_Stuff\\msys64\\mingw64\\bin;.\\Compile_Stuff\\msys64\\ucrt64\\bin;.\\Compile_Stuff\\TDM-GCC-64\\bin;${env:PATH}"
+        }
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "problemMatcher": []
+    }
+  ]
+}
+
+
