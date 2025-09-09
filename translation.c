@@ -64,3 +64,41 @@ static double tand(double degrees);
 #define STEP        (0.5e-3)                                                 // Step Size
 #define FINISH_X    (49.5e-3)                                                // End of X Axis
 #define FINISH_Y    (24.5e-3)                                                // End of Y Axis
+
+
+/**************************************/
+/* Main Function aka Start of Program */
+/**************************************/
+
+int main(void) {
+
+    /**************************************/
+    /*     Fast Time Domain Variables     */
+    /**************************************/
+
+    double *t_arr = NULL;                                                    // Time array for data acquisition
+
+    /**************************************/
+    /*    File Manipulation Variables     */
+    /**************************************/
+
+    mat_t *img_fp = NULL;                                                    // Pointer to the .mat file
+    matvar_t *X_POS = NULL;                                                  // Variable to hold X_POS variable, content of variable doesn't matter only dimensions
+    matvar_t *Y_POS = NULL;                                                  // Variable to hold Y_POS variable, content of variable doesn't matter only dimensions
+    matvar_t *myStruct = NULL;                                               // Variable to hold myStruct variable
+    size_t file_rows;                                                        // Number of rows for the final data tensor, also the number of data arrays in each .mat file's myStruct
+    size_t file_cols;                                                        // Number of columns for the final data tensor, also the number of .mat files
+    size_t struct_fld_len;                                                   // Number of pages for the final data tensor, also the length of an array field in the data of a myStruct
+    double *final_data = NULL;                                               // Tensor that holds all data from .mat files. Every column holds data for one .mat file, 
+    //                                                                          in which (i,j,:) is one array from a file's myStruct and (:,j,:) is one file
+    matvar_t *struct_fld= NULL;                                              // Variable to hold a field from myStruct, which is an array of arrays
+    double *struct_fld_data = NULL;                                          // Pointer to an array in the struct_fld
+    char f_naming[300] = {'\0'};                                             // The naming convention for the .mat files  
+    char f_path[32768] = {'\0'};                                             // Path to files with data. 32768 chars is max for file path. "C:\Users\zimmy\Code\Mat_2_C\Input\" Is for me
+    char f_name[33068] = {'\0'};                                             // Path and name of the .mat file to read. 33068 chars is max for file path + file name + safety space
+    char f_bkg_naming[300] = {'\0'};                                         // The name of the background files 
+    char f_bkg_name[33068] = {'\0'};                                         // Path and name of the background file to read. 33068 chars is max for file path + file name + safety space
+    FILE *fp_bkg = NULL;                                                     // Pointer to the file with background data   
+    double *bkg_data = NULL;                                                 // Array to hold data read from the background file
+
+}
