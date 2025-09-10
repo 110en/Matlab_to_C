@@ -101,4 +101,114 @@ int main(void) {
     FILE *fp_bkg = NULL;                                                     // Pointer to the file with background data   
     double *bkg_data = NULL;                                                 // Array to hold data read from the background file
 
+
+    printf("Program started\n"); 
+    fflush(stdout);
+
+    /**************************************/
+    /*       Give Variables Values        */
+    /**************************************/
+
+    t_arr = linspace(0, T_END, N);
+    if ( t_arr == NULL ) {                                                   // Check if memory allocation failed
+        perror("Error allocating memory for t_arr\n");
+        fflush(stdout);
+        exit(EXIT_FAILURE);
+    }
+
+    /**************************************/
+    /*     Acquiring Data from Files      */
+    /**************************************/
+
+    /*
+    .mat file architecture:
+
+    FILE        VARIABLE                                        FIELD                                       DATA
+
+                |-- X_POS (1xfile_rows double array)
+                |-- Y_POS (1xfile_cols double array)
+    .mat file --|
+                |-- myStruct (1xfile_rows struct array) --------|-- data (1xfile_rows double array) ----|-- data(0) (1xstruct_fld_len double array) ; upto data(file_rows-1)
+    */
+
+    // Obtain number of rows, columns, and pages for the final data tensor
+
+    // Prompt user for file path and naming convention
+    printf("Enter Path to Files with Data (e.g. C:\\Users\\zimmy\\Code\\Mat_2_C\\Input\\): ");
+    scanf("%32767s", f_path);
+
+    printf("Enter Naming Convention for Files with Data (e.g. Img_Row, where all files named Img_Row1.mat, Img_Row2.mat etc.): ");
+    scanf("%299s", f_naming);
+
+    sprintf(f_name, "%s%s%d.mat", f_path, f_naming, 1);                      // Which of the files is read here doesn't matter.
+
+    // Open .mat file
+    img_fp = Mat_Open(f_name, MAT_ACC_RDONLY);
+    if ( img_fp == NULL ) {
+        printf("Error opening file '%s'\n", f_name);
+        fflush(stdout);
+        exit(EXIT_FAILURE);
+    }
+
+    // Read variables in .mat file
+    X_POS = Mat_VarRead(img_fp, "X_POS");
+    Y_POS = Mat_VarRead(img_fp, "Y_POS");
+    myStruct = Mat_VarRead(img_fp, "myStruct");
+    if ( X_POS == NULL || Y_POS == NULL || myStruct == NULL ) {              // Check if reading variables failed
+        printf("Error reading variable(s) from file.\n");
+        fflush(stdout);
+        exit(EXIT_FAILURE);
+    }
+
+    // Extract info from variables
+    file_rows = X_POS -> dims[1];
+    file_cols = Y_POS -> dims[1];
+    struct_fld = Mat_VarGetStructField(myStruct, "data", MAT_BY_NAME, 1);    // Which of the files is read here doesn't matter.
+    if ( struct_fld == NULL ) {
+        printf("Error: 'data' field missing in myStruct element 1\n"); 
+        fflush(stdout);
+        exit(EXIT_FAILURE);
+    }
+    struct_fld_len = struct_fld -> dims[1];
+
+    // Close .mat file and variables that are no longer used
+    Mat_VarFree(X_POS);
+    Mat_VarFree(Y_POS);
+    Mat_VarFree(myStruct);
+    Mat_Close(img_fp);
+
+    // Prompt user for background file name
+    printf("Enter Name of File with the Background Data (Assuming it is in the same folder as the rest of the data files): ");
+    scanf("%299s", f_bkg_naming);
+
+    sprintf(f_bkg_name, "%s%s", f_path, f_bkg_naming);
+
+    fp_bkg = fopen(f_bkg_name, "r");
+    if ( fp_bkg == NULL ) {                                                  // Check if file opening failed
+        perror("Error opening background file\n");
+        fflush(stdout);
+        exit(EXIT_FAILURE);
+    }
+
+    // Allocate buffer to hold data from file_bkg
+    bkg_data = malloc(struct_fld_len * sizeof(*bkg_data));
+    if ( bkg_data == NULL ) {                                                // Check if memory allocation failed
+        perror("Error allocating memory for data_bkg\n");
+        fflush(stdout);
+        exit(EXIT_FAILURE);
+    }    
+
+    // Read data from background file
+    for ( size_t i = 0 ; i < struct_fld_len ; i++ ) {
+
+        if ( fscanf(fp_bkg, " %lf,", &bkg_data[i]) != 1 ) {
+            fprintf(stderr, "Error reading value %zu from background file\n", i);
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    // Close file no longer needed
+    fclose(fp_bkg);
+
+
 }
