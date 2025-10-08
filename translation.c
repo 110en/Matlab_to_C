@@ -219,5 +219,90 @@ int main(void) {
     // Close file no longer needed
     fclose(fp_bkg);
 
+    /**************************************/
+    /*      Element-Wise Arithmetics      */
+    /**************************************/
+
+    time2_data = malloc(file_rows * file_cols * struct_fld_len * sizeof(*time2_data));
+
+    // Check if memory allocation failed
+    if ( time2_data == NULL ) { 
+        perror("Error allocating memory for time2_data\n");
+        fflush(stdout);
+        exit(EXIT_FAILURE);
+    }
+
+    ele1_math = (2.0 * GAMMA * 32.85e-2) / LIGHT;
+    ele2_math = (WC * 2.0 * 32.85e-2) / LIGHT;
+    // Get data from all .mat files and copy them to final_data
+
+    // Opens a file, reads the myStruct variable, then stores all its arrays from the data field into final_data in indicies (i,j,:)
+    #pragma omp parallel for
+    for ( size_t j = 0 ; j < file_cols ; j++ ) {                              // Loop through all .mat files
+
+        char thread_f_name[33068] = {'\0'};                                   // Thread safe file name variable
+        mat_t *thread_img_fp = NULL;                                          // Thread safe pointer to the .mat file
+        matvar_t *thread_myStruct = NULL;                                     // Thread safe variable to hold myStruct variable
+
+        sprintf(thread_f_name, "%s%s%d.mat", f_path, f_naming, j + 1);        // +1 is due to 0-based indexing in C, but files start at 1
+
+        thread_img_fp = Mat_Open(thread_f_name, MAT_ACC_RDONLY);
+        if ( thread_img_fp == NULL ) {
+            printf("Error opening file '%s'\n", thread_f_name);
+            fflush(stdout);
+            exit(EXIT_FAILURE);
+        }
+
+        thread_myStruct = Mat_VarRead(thread_img_fp, "myStruct");
+        if ( thread_myStruct == NULL ) {
+            printf("Error reading myStruct from file #%d.\n", j + 1);
+            fflush(stdout);
+            exit(EXIT_FAILURE);
+        }
+
+        for ( size_t i = 0 ; i < file_rows ; i++ ) {                         // Loop through all rows aka arrays in data field of the myStruct
+
+            matvar_t *thread_struct_fld = NULL;                              // Variable to hold a field from myStruct for this thread
+            double *struct_fld_data = NULL;                                  // Pointer to an array in the struct
+
+            thread_struct_fld = Mat_VarGetStructField(thread_myStruct, "data", MAT_BY_NAME, i);
+
+            if ( thread_struct_fld == NULL ) {
+                printf("Error: 'data' field missing in myStruct element %zu\n", i + 1);
+                fflush(stdout);
+                exit(EXIT_FAILURE);
+            }
+
+            struct_fld_data = thread_struct_fld -> data;
+            if ( struct_fld_data == NULL ) {
+                printf("Error: 'data' field in myStruct element %zu is NULL\n", i + 1);
+                fflush(stdout);
+                exit(EXIT_FAILURE);
+            }
+
+            // Value at (i,j,k) in tensor = tensor[i + (j*rows) + (k*rows*cols)]
+            // Multiply each element in t_arr by ele1_math, then add ele2_math to each element.
+            // Next, make each element complex, then take the exponential of each complex element. 
+            // Then, subtract each corresponding element in bkg_data from each element in struct_fld_data
+            // Finally, multiply exponentiated number with "clean" data and store in time2_data.
+            // Visually: final_data is a file_rows x file_cols matrix, which holds arrays (1xstruct_fld_len). 
+            // We are subtracting bkg_data(1xstruct_fld_len) from each array in final_data before multiplying with the exponentiated number.
+            for ( size_t k = 0 ; k < struct_fld_len ; k++ ) {
+                expo = cexp(((t_arr[k] * ele1_math) + ele2_math) * I);
+                time2_data[i + (j * file_rows) + (k * file_rows * file_cols)] = (struct_fld_data[k] - bkg_data[k]) * expo;
+            }    
+            // Don't need to free struct_fld, as it is freed when myStruct is destroyed.
+        }
+
+        // Close .mat file and variables that are no longer used
+        Mat_VarFree(thread_myStruct);
+        Mat_Close(thread_img_fp);
+    }
+
+    free(bkg_data);                                                          // Free memory no longer needed
+
+    printf("reached post file reading\n");
+    fflush(stdout);
+
 
 }
