@@ -601,4 +601,118 @@ int main(void) {
     printf("reached post interpolation\n");
     fflush(stdout);
 
+    /**************************************/
+    /*              Final FFT             */
+    /**************************************/
+
+    fft_fhat = fftw_malloc(padded_kx * padded_ky * N * sizeof(*fft_fhat));
+    if ( fft_fhat == NULL ) {                                                // Check if memory allocation failed
+        perror("Error allocating memory for fft_fhat\n");
+        fflush(stdout);
+        exit(EXIT_FAILURE);
+    }
+    fft_fhat[0] = nan("");                                                   // Set first element to NAN to check if FFT failed later
+
+    ftx(fhat, fft_fhat, padded_kx, padded_ky * N);                           // Perform FFT along the first axis (rows) of time2_data
+    if ( isnan((double) fft_fhat[0]) ) {                                     // Check if FFT failed
+        printf("FFTx failed, first element is NAN\n");
+        fflush(stdout);
+        exit(EXIT_FAILURE);
+    }
+    fftw_free(fhat);                                                         // Free memory no longer needed
+
+    fft2_fhat = fftw_malloc(padded_kx * padded_ky * N * sizeof(*fft2_fhat));
+    if ( fft2_fhat == NULL ) {                                               // Check if memory allocation failed
+        perror("Error allocating memory for fft2_fhat\n");
+        fflush(stdout);
+        exit(EXIT_FAILURE);
+    }
+    fft2_fhat[0] = nan("");                                                  // Set first element to NAN to check if FFT failed later
+
+    fty(fft_fhat, fft2_fhat, padded_kx, padded_ky, N);                       // Perform FFT along the second axis (columns) of fft_arr
+    if ( isnan((double) fft2_fhat[0]) ) {                                    // Check if FFT failed
+        printf("FFTy failed, first element is NAN\n");
+        fflush(stdout);
+        exit(EXIT_FAILURE);
+    }
+    fftw_free(fft_fhat);                                                     // Free memory no longer needed
+
+    fft3_fhat = fftw_malloc(padded_kx * padded_ky * N * sizeof(*fft3_fhat));
+    if ( fft3_fhat == NULL ) {                                               // Check if memory allocation failed
+        perror("Error allocating memory for fft3_fhat\n");
+        fflush(stdout);
+        exit(EXIT_FAILURE);
+    }
+    fft3_fhat[0] = nan("");                                                  // Set first element to NAN to check if FFT failed later
+
+    ftz(fft2_fhat, fft3_fhat, padded_kx, padded_ky, N);
+    if ( isnan((double) fft3_fhat[0]) ) {                                    // Check if FFT failed
+        printf("FFTy failed, first element is NAN\n");
+        fflush(stdout);
+        exit(EXIT_FAILURE);
+    }
+
+    // Write the dimensions of fft3_fhat to the file
+    path_len = strlen(f_path);
+    f_path[path_len - 6] = '\0';                                             // Remove the last 6 characters from f_path to get to the main folder
+    sprintf(f_path, "%sMatLab\\fhat3_dim.txt", f_path);                      // Create the file name for the dimensions of fft3_fhat to be written in the MatLab folder
+
+    file = fopen(f_path, "w");
+    if (file == NULL) {                                                      // Check if file opening failed
+        perror("Error opening file for writing fhat3_dim\n");
+        fflush(stdout);
+        exit(EXIT_FAILURE);
+    }
+
+    // Write the dimensions of fft3_fhat to file
+    fprintf(file, "%d %d %d\n", padded_kx, padded_ky, (int) N);
+    fclose(file);
+    
+    // Write fft3_fhat to a file so that MATLAB script can read it for plotting
+
+    path_len = strlen(f_path);
+    f_path[path_len - 13] = '\0';                                            // Remove the last 13 characters from f_path to get to the main folder
+    sprintf(f_path, "%sfft3_fhat.bin", f_path);                              // Create the file name for fft3_fhat to be written in the MatLab folder
+
+    file = fopen(f_path, "wb");
+    if ( file == NULL) {                                                     // Check if file opening failed
+        perror("Error opening file"); 
+        fflush(stdout);
+        exit(EXIT_FAILURE); 
+    }
+
+    total = padded_kx * padded_ky * N;
+    chunk = 1048576;
+    written = 0;
+    next_progress = total / 4;                                               // Give updates every 25% of the total
+    progress_count = 1;
+    while ( written < total ) {
+
+        size_t to_write = (total - written > chunk) ? chunk : (total - written);  // How much to write for current system call
+        size_t just_written = fwrite(fft3_fhat + written, sizeof(*fft3_fhat), to_write, file);  // Write to file, save how much we actually wrote
+
+        if ( just_written != to_write ) {
+            perror("Error during fwrite");
+            printf("Attempted to write %zu, actually wrote %zu\n", to_write, just_written);
+            fclose(file);
+            fflush(stdout);
+            exit(EXIT_FAILURE);
+        }
+
+        written += just_written;
+
+        if ( written >= next_progress && progress_count <= 4 ) {
+
+            printf("Progress: %zu%% (%zu/%zu)\n", progress_count * 25, written, total);
+            fflush(stdout);
+            progress_count++;
+            next_progress = (total * progress_count) / 4;
+        }
+    }
+
+    // Free memory and close file no longer needed
+    fclose(file);
+    fftw_free(fft2_fhat);
+    fftw_free(fft3_fhat); 
+
 }
