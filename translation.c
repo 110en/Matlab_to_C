@@ -168,6 +168,21 @@ int main(void) {
     gsl_interp_accel *acc_imag = NULL;                                       // GSL's "acceleration object" for imaginary values. Quickens interpolation via stuff
 
     /**************************************/
+    /*         Final FFT Variables        */
+    /**************************************/
+
+    fftw_complex *fft_fhat = NULL;
+    fftw_complex *fft2_fhat = NULL;
+    fftw_complex *fft3_fhat = NULL;
+    FILE *file = NULL;                                                       // File pointer used to write fft3_fhat, xImg, yImg, and distZ to a file for later use
+    size_t path_len;                                                         // Current length of f_path, used to remove the last characters from it to get to the main folder
+    size_t total;                                                            // Total size of fft3_fhat
+    size_t chunk;                                                            // Number of data points written per system call
+    size_t written;                                                          // Progress of how much of fft3_fhat has been written to the file
+    size_t next_progress;                                                    // How many updates to print regarding file writing situation
+    size_t progress_count;                                                   // Number of updates given
+
+    /**************************************/
     /*     Acquiring Data from Files      */
     /**************************************/
 
