@@ -150,6 +150,24 @@ int main(void) {
     double *part_kz_3D = NULL;                                               // A 1x1xN array that holds a slice of kz_3D for a (num_trunc_kx/2,num_trunc_ky/2,:), terminated by NAN
 
     /**************************************/
+    /*       Interpolation Variables      */
+    /**************************************/
+
+    int padsize;
+    int padded_kx;
+    int padded_ky;
+    fftw_complex *fhat = NULL;                                               // Array to hold FFT data after interpolation. Data is centered and surrounded by 0's and terminated with NAN
+    double *slice_kz_3D = NULL;                                              // A 1x1xN array that holds a slice of kz_3D for a (i,j,:) 
+    double *real_vals = NULL;                                                // Array with portions of fft2_arr that hold the real value
+    double *imag_vals = NULL;                                                // Array with portions of fft2_arr that hold the imaginary value
+    double interp_real;                                                      // Interpolated real value
+    double interp_imag;                                                      // Interpolated imaginary value
+    gsl_interp *interp_real_obj = NULL;                                      // GSL's "interpolation object" for real values. What we do interpolation with
+    gsl_interp_accel *acc_real = NULL;                                       // GSL's "acceleration object" for real values. Quickens interpolation via stuff
+    gsl_interp *interp_imag_obj = NULL;                                      // GSL's "interpolation object" for imaginary values. What we do interpolation with
+    gsl_interp_accel *acc_imag = NULL;                                       // GSL's "acceleration object" for imaginary values. Quickens interpolation via stuff
+
+    /**************************************/
     /*     Acquiring Data from Files      */
     /**************************************/
 
