@@ -67,6 +67,29 @@ static double tand(double degrees);
 
 
 /**************************************/
+/*       Small Helper Functions       */
+/**************************************/
+
+// Returns the tangent of an angle in degrees
+static double tand(double degrees) {
+
+    double radians = degrees * (PI / 180);
+    return tan(radians);
+}
+
+// Return p such that 2^p >= |x|, with nextpow2(0)=0
+static int nextpow2(int x) {
+
+    int ret = 0;
+
+    if (x != 0) 
+        ret = (int) ceil(log2(fabs(x)));
+
+    return ret;
+}
+
+
+/**************************************/
 /* Main Function aka Start of Program */
 /**************************************/
 
