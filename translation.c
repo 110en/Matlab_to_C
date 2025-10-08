@@ -117,6 +117,15 @@ int main(void) {
     }
 
     /**************************************/
+    /*     Data Manipulation Variables    */
+    /**************************************/
+
+    double complex *time2_data = NULL;
+    double ele1_math;                                                        // Number used for element-wise math operations on t_arr
+    double ele2_math;                                                        // Number used for element-wise math operations on t_arr
+    double complex expo;                                                     // Exponential of the element-wise math operations on t_arr
+
+    /**************************************/
     /*     Acquiring Data from Files      */
     /**************************************/
 
