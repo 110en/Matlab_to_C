@@ -101,21 +101,6 @@ int main(void) {
     FILE *fp_bkg = NULL;                                                     // Pointer to the file with background data   
     double *bkg_data = NULL;                                                 // Array to hold data read from the background file
 
-
-    printf("Program started\n"); 
-    fflush(stdout);
-
-    /**************************************/
-    /*       Give Variables Values        */
-    /**************************************/
-
-    t_arr = linspace(0, T_END, N);
-    if ( t_arr == NULL ) {                                                   // Check if memory allocation failed
-        perror("Error allocating memory for t_arr\n");
-        fflush(stdout);
-        exit(EXIT_FAILURE);
-    }
-
     /**************************************/
     /*     Data Manipulation Variables    */
     /**************************************/
@@ -147,7 +132,6 @@ int main(void) {
     int center_ky;                                                           // Column index of the center of kz_3D
     float *kz_3D = NULL;
     double *kz_1D = NULL;                                                    // A 1x1xN array that holds a slice of kz_3D at the very center index (center_kx, center_ky, :)
-    double *part_kz_3D = NULL;                                               // A 1x1xN array that holds a slice of kz_3D for a (num_trunc_kx/2,num_trunc_ky/2,:), terminated by NAN
 
     /**************************************/
     /*       Interpolation Variables      */
@@ -181,6 +165,33 @@ int main(void) {
     size_t written;                                                          // Progress of how much of fft3_fhat has been written to the file
     size_t next_progress;                                                    // How many updates to print regarding file writing situation
     size_t progress_count;                                                   // Number of updates given
+    
+    /**************************************/
+    /*     Image Generation Variables     */
+    /**************************************/
+
+    double *part_kz_3D = NULL;                                               // A 1x1xN array that holds a slice of kz_3D for a (num_trunc_kx/2,num_trunc_ky/2,:), terminated by NAN
+    double dx;
+    double dy;
+    double dz;
+    double *xImg = NULL;                                                     // Array to hold x values for the image
+    double *yImg = NULL;                                                     // Array to hold y values for the image
+    double *distZ = NULL;                                                    // Array to hold z distances for the image
+
+
+    printf("Program started\n"); 
+    fflush(stdout);
+
+    /**************************************/
+    /*       Give Variables Values        */
+    /**************************************/
+
+    t_arr = linspace(0, T_END, N);
+    if ( t_arr == NULL ) {                                                   // Check if memory allocation failed
+        perror("Error allocating memory for t_arr\n");
+        fflush(stdout);
+        exit(EXIT_FAILURE);
+    }
 
     /**************************************/
     /*     Acquiring Data from Files      */
