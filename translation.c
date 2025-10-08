@@ -725,5 +725,136 @@ int main(void) {
     fclose(file);
     fftw_free(fft2_fhat);
     fftw_free(fft3_fhat); 
+    
+    /**************************************/
+    /*   Preparing for Image Generation   */
+    /**************************************/
+
+    printf("reached pre image gen\n");
+    fflush(stdout);
+
+    // Calculate multipliers for image generation
+    dx = PI / max_array(trunc_kx);
+    dy = PI / max_array(trunc_ky);
+    dz = (2.0 * PI) / (max_array(part_kz_3D) - min_array(part_kz_3D));
+
+    // Free memory no longer needed
+    free(part_kz_3D);
+    free(trunc_kx);
+    free(trunc_ky);
+
+    // Write xImg to a file so that MATLAB script can read it for plotting
+
+    // Allocate memory for image generation x axis
+    xImg = coloncolon((padded_kx - 1)/-2, 1, (padded_kx - 1)/2);
+    if ( xImg == NULL ) {                                                    // Check if memory allocation failed
+        perror("Error allocating memory for image generation along x axis\n");
+        fflush(stdout);
+        exit(EXIT_FAILURE);
+    }
+
+    // Reverse xImg
+    for (int i = 0; i < padded_kx / 2; i++) {
+        double tmp = xImg[i];
+        xImg[i] = xImg[padded_kx - 1 - i];
+        xImg[padded_kx - 1 - i] = tmp;
+    }
+
+    // Fill xImg with values
+    for ( int a = 0 ; a < padded_kx ; a++ )
+        xImg[a] = xImg[a] * dx;
+
+    path_len = strlen(f_path);
+    f_path[path_len - 13] = '\0';                                            // Remove the last 13 characters from f_path to get to the main folder
+    sprintf(f_path, "%sxImg.txt", f_path);                                   // Create the file name for xImg to be written in the MatLab folder
+
+    file = fopen(f_path, "wb");
+    if (file == NULL ) {                                                     // Check if file opening failed
+        perror("Error opening file for writing xImg\n");
+        fflush(stdout);
+        exit(EXIT_FAILURE);
+    }
+    
+    // Write xImg to file
+    fwrite(xImg, sizeof(*xImg), padded_kx, file);
+
+    // Free memory and close file no longer needed
+    free(xImg);
+    fclose(file);
+    
+    // Write yImg to a file so that MATLAB script can read it for plotting
+
+    // Allocate memory for image generation y axis
+    yImg = coloncolon((padded_ky - 1)/-2, 1, (padded_ky - 1)/2);
+    if ( yImg == NULL ) {                                                   // Check if memory allocation failed
+        perror("Error allocating memory for image generation along y axis\n");
+        fflush(stdout);
+        exit(EXIT_FAILURE);
+    }
+
+    // Reverse yImg
+    for (int i = 0; i < padded_ky / 2; i++) {
+        double tmp = yImg[i];
+        yImg[i] = yImg[padded_ky - 1 - i];
+        yImg[padded_ky - 1 - i] = tmp;
+    }
+
+    // Fill yImg with values
+    for ( int a = 0 ; a < padded_ky ; a++ )
+        yImg[a] = yImg[a] * dy;
+
+    path_len = strlen(f_path);
+    f_path[path_len - 8] = '\0';                                             // Remove the last 8 characters from f_path to get to the main folder
+    sprintf(f_path, "%syImg.txt", f_path);                                   // Create the file name for yImg to be written in the MatLab folder
+
+    file = fopen(f_path, "wb");
+    if ( file == NULL ) {                                                    // Check if file opening failed
+        perror("Error opening file for writing yImg\n");
+        fflush(stdout);
+        exit(EXIT_FAILURE);
+    }
+
+    // Write yImg to file
+    fwrite(yImg, sizeof(*yImg), padded_ky, file);
+
+    // Free memory and close file no longer needed
+    free(yImg);
+    fclose(file);
+
+    // Write distZ to file so that MATLAB script can read it for plotting
+
+    // Allocate memory for image generation z axis
+    distZ = coloncolon(1.0f, 1.0f, (float) N);
+    if ( distZ == NULL ) {                                                   // Check if memory allocation failed
+        perror("Error allocating memory for image generation along z axis\n");
+        fflush(stdout);
+        exit(EXIT_FAILURE);
+    }
+
+    // Fill distZ with values
+    for ( int a = 0 ; a < N ; a++ )
+        distZ[a] = distZ[a] * dz;
+    
+    path_len = strlen(f_path);
+    f_path[path_len - 8] = '\0';                                             // Remove the last 8 characters from f_path to get to the main folder
+    sprintf(f_path, "%sdistZ.txt", f_path);                                  // Create the file name for distZ to be written in the MatLab folder
+
+    file = fopen(f_path, "wb");
+    if ( file == NULL ) {                                                    // Check if file opening failed
+        perror("Error opening file for writing distZ\n");
+        fflush(stdout);
+        exit(EXIT_FAILURE);
+    }
+
+    // Write distZ to file
+    fwrite(distZ, sizeof(*distZ), N, file);
+
+    // Free memory and close file no longer needed
+    free(distZ);
+    fclose(file);
+
+    printf("All done!\n");
+
+    return 0;
 
 }
