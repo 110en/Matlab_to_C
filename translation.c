@@ -468,4 +468,122 @@ int main(void) {
     }
     part_kz_3D[N] = nan("");                                                 // terminate part_kz_3D with NAN as the last element
 
+    /**************************************/
+    /*      Interpolation and Padding     */
+    /**************************************/
+
+    printf("reached interpolation\n");
+    fflush(stdout);
+
+    // Calculate the padding
+    padsize = floor((pow(2, nextpow2(num_trunc_kx)) - num_trunc_kx) / 2);
+    padded_kx = num_trunc_kx + (2 * padsize);
+    padded_ky = num_trunc_ky + (2 * padsize);
+
+    // Allocate memory for interpolation output with padding
+    fhat = fftw_malloc(((padded_kx * padded_ky * N) + 1) * sizeof(*fhat));   // +1 for terminating element
+    if ( fhat == NULL ) {
+        perror("Error allocating memory for fhat\n");
+        fflush(stdout);
+        exit(EXIT_FAILURE);
+    }
+    memset(fhat, 0 + 0 * I, padded_kx * padded_ky * N * sizeof(*fhat));      // Make all entries in fhat 0
+
+    // Allocate memory for temporary arrays for interpolation
+    slice_kz_3D = malloc(N * sizeof(*slice_kz_3D));
+    real_vals = malloc(N * sizeof(*real_vals));
+    imag_vals = malloc(N * sizeof(*imag_vals));
+    if ( slice_kz_3D == NULL || real_vals == NULL || imag_vals == NULL ) {
+        perror("Error allocating memory for interpolation arrays\n");
+        fflush(stdout);
+        exit(EXIT_FAILURE);
+    }
+
+    // Allocate GSL real part
+    interp_real_obj = gsl_interp_alloc(gsl_interp_linear, N);                // Interpolation object for real values. slice_kz_3D is the x-axis, real_vals is the y-axis
+    acc_real = gsl_interp_accel_alloc();
+
+    // Allocate GSL imaginary part
+    interp_imag_obj = gsl_interp_alloc(gsl_interp_linear, N);                // Interpolation object for imaginary values. slice_kz_3D is the x-axis, imag_vals is the y-axis
+    acc_imag = gsl_interp_accel_alloc();
+
+    // Interpolation
+    for ( int i = 0 ; i < num_trunc_kx ; i++ ) {
+        for ( int j = 0 ; j < num_trunc_ky ; j++ ) {
+
+            // Extracts a (i, j, :) slice from kz_3D and stores it in slice_kz_3D
+            // Will extract a (i, j, :) slice from fft2_arr and store its real and imaginary parts in their respective arrays
+            for ( int k = 0 ; k < N ; k++ ) {
+                
+                slice_kz_3D[k] = (double) kz_3D[i + (j * num_trunc_kx) + (k * num_trunc_kx * num_trunc_ky)];
+
+                fftw_complex val = fft2_arr[kx_index[i] + (ky_index[j] * file_rows) + (k * file_rows * file_cols)];
+                real_vals[k] = creal(val);
+                imag_vals[k] = cimag(val);
+            }
+            
+            // Reverse order of slice_kz_3D, real_vals, and imag_vals if they are decreasing order as gsl needs increasing order
+            if ( slice_kz_3D[0] > slice_kz_3D[N-1] ) {
+                for ( int k = 0 ; k < N/2 ; k++ ) {
+
+                    // Swap slice_kz_3D
+                    double tmp = slice_kz_3D[k];
+                    slice_kz_3D[k] = slice_kz_3D[N-1-k];
+                    slice_kz_3D[N-1-k] = tmp;
+
+                    // Swap real_vals
+                    tmp = real_vals[k];
+                    real_vals[k] = real_vals[N-1-k];
+                    real_vals[N-1-k] = tmp;
+
+                    // Swap imag_vals
+                    tmp = imag_vals[k];
+                    imag_vals[k] = imag_vals[N-1-k];
+                    imag_vals[N-1-k] = tmp;
+                }
+            }
+
+            // Set up GSL interpolation for real part
+            gsl_interp_init(interp_real_obj, slice_kz_3D, real_vals, N);
+
+            // Set up GSL interpolation for imag part
+            gsl_interp_init(interp_imag_obj, slice_kz_3D, imag_vals, N);
+
+            // Interpolate
+            for ( int k = 0 ; k < N ; k++ ) {
+                
+                // Point to interpolate around
+                double x = kz_1D[k];
+
+                // Interpolate only if x is strictly increasing or decreasing. If x is in bounds, interoplate. If not, leave it as 0.
+                if ( (slice_kz_3D[0] < slice_kz_3D[N-1] && x >= slice_kz_3D[0] && x <= slice_kz_3D[N-1]) ||
+                     (slice_kz_3D[0] > slice_kz_3D[N-1] && x <= slice_kz_3D[0] && x >= slice_kz_3D[N-1]) ) {
+
+                    interp_real = gsl_interp_eval(interp_real_obj, slice_kz_3D, real_vals, x, acc_real); // Interpolate real part. 
+                    interp_imag = gsl_interp_eval(interp_imag_obj, slice_kz_3D, imag_vals, x, acc_imag); // Interpolate imaginary part. 
+                    fhat[(i + padsize) + ((j + padsize) * padded_kx) + (k * padded_kx * padded_ky)] = interp_real + interp_imag * I;
+                }
+            }
+        }
+    }
+
+    fhat[padded_kx * padded_ky * N] = nan("");                               // Terminate fhat with NAN 
+
+    // Free memory no longer needed
+    free(kz_3D);
+    free(kz_1D);
+    free(slice_kz_3D);
+    free(real_vals);
+    free(imag_vals);
+    free(kx_index);
+    free(ky_index);
+    fftw_free(fft2_arr);
+    gsl_interp_free(interp_real_obj);
+    gsl_interp_free(interp_imag_obj);
+    gsl_interp_accel_free(acc_real);
+    gsl_interp_accel_free(acc_imag);
+
+    printf("reached post interpolation\n");
+    fflush(stdout);
+
 }
