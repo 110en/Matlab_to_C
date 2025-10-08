@@ -7,6 +7,27 @@
         - Paper in which this is based on: https://ieeexplore.ieee.org/abstract/document/10549956
         - Credit Where Credit is Due: FFTW, GSL, Matio
         
+    Output:
+        - Writes 5 files to the 'MatLab' folder in the same directory as this program. The first is the dimensions of the final data tensor, the second is
+          is the final data tensor, the third is the x-axis for plotting, the fourth is the y-axis for plotting, and the fifth is the z-axis for plotting.
+            - Warning: Any previous data files written by this program will be overwritten
+
+    Input:
+        - Takes in .mat files that hold the raw data in the ./Input folder. These data files should be written with a naming convention (Img_Row#.mat), 
+          with the last character (in the case of the example, #) being a number starting at 1.
+            - The .mat files should have the following variables:
+                - X_POS: A 1xX double array in which it's length is the resolution of the data for the x-axis (X)
+                - Y_POS: A 1xY double array in which it's length is the resolution of the data for the y-axis (Y).
+                - myStruct: A 1xX struct array with a field called 'data', which consists of X 1xN double arrays (N is the z-axis)
+
+        - Takes in a background file that holds the background data in the same folder as the data files (./Input). 
+
+        - When the program runs, the prompt will ask for the path to the data files, the naming convention of the data files, and the name of the background file. 
+          Press enter after each input. Using vs code tasks can automate this process (check out README)
+
+
+    PLEASE CHECK THE README FILE BEFORE USING THIS PROGRAM!!!!!!!!!  Appreciate it :D
+
 */
 
 
