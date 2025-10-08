@@ -147,6 +147,7 @@ int main(void) {
     int center_ky;                                                           // Column index of the center of kz_3D
     float *kz_3D = NULL;
     double *kz_1D = NULL;                                                    // A 1x1xN array that holds a slice of kz_3D at the very center index (center_kx, center_ky, :)
+    double *part_kz_3D = NULL;                                               // A 1x1xN array that holds a slice of kz_3D for a (num_trunc_kx/2,num_trunc_ky/2,:), terminated by NAN
 
     /**************************************/
     /*     Acquiring Data from Files      */
@@ -327,5 +328,126 @@ int main(void) {
     printf("reached post file reading\n");
     fflush(stdout);
 
+    /**************************************/
+    /*       FFT and Reconstruction       */
+    /**************************************/
+
+    fft_arr = fftw_malloc( file_rows * file_cols * struct_fld_len * sizeof(*fft_arr));
+    if ( fft_arr == NULL ) {                                                 // Check if memory allocation failed
+        perror("Error allocating memory for fft_arr\n");
+        fflush(stdout);
+        exit(EXIT_FAILURE);
+    }
+    fft_arr[0] = nan("");                                                    // Set first element to NAN to check if FFT failed later'
+
+    ftx(time2_data, fft_arr, file_rows, file_cols * struct_fld_len);         // Perform FFT along the first axis (rows) of time2_data
+    if ( isnan((double) fft_arr[0]) ) {                                      // Check if FFT failed
+        printf("FFTx failed, first element is NAN\n");
+        fflush(stdout);
+        exit(EXIT_FAILURE);
+    }
+    free(time2_data);                                                        // Free memory no longer needed
+
+    fft2_arr = fftw_malloc( file_rows * file_cols * struct_fld_len * sizeof(*fft2_arr));
+    if ( fft2_arr == NULL ) {                                                // Check if memory allocation failed
+        perror("Error allocating memory for fft2_arr\n");
+        fflush(stdout);
+        exit(EXIT_FAILURE);
+    }
+    fft2_arr[0] = nan("");                                                   // Set first element to NAN to check if FFT failed later
+
+    fty(fft_arr, fft2_arr, file_rows, file_cols, struct_fld_len);            // Perform FFT along the second axis (columns) of fft_arr
+    if ( isnan((double) fft2_arr[0]) ) {                                     // Check if FFT failed
+        printf("FFTy failed, first element is NAN\n");
+        fflush(stdout);
+        exit(EXIT_FAILURE);
+    }
+    fftw_free(fft_arr);                                                      // Free memory no longer needed
+
+    // Do some math to t_arr and get values for Qt_arr
+    for ( int a = 0 ; a < N ; a++ )
+        Qt_arr[a] = (t_arr[a] * ((-2.0 * GAMMA) / LIGHT)) + ((WC * 2.0) / LIGHT);  
+
+    dkx = PI / FINISH_X;
+    dky = PI / FINISH_Y;
+
+    kx = coloncolon(((file_rows - 1)) / -2.0f, 1.0f, ((file_rows - 1)) / 2.0f);
+    ky = coloncolon(((file_cols - 1)) / -2.0f, 1.0f, ((file_cols - 1)) / 2.0f);
+    if ( kx == NULL || ky == NULL ) {                                        // Check if memory allocation failed
+        perror("Error allocating memory for kx or ky\n");
+        fflush(stdout);
+        exit(EXIT_FAILURE);
+    }
+
+    // Will possibly be larger than needed
+    trunc_kx = calloc(file_rows + 1, sizeof(*trunc_kx));                        
+    trunc_ky = calloc(file_cols + 1, sizeof(*trunc_ky));
+    kx_index = malloc(file_rows * sizeof(*kx_index)); 
+    ky_index = malloc(file_cols * sizeof(*ky_index));
+    if ( trunc_kx == NULL || trunc_ky == NULL || kx_index == NULL || ky_index == NULL ) { // Check if memory allocation failed
+        perror("Error allocating memory for truncated and index arrays of kx/ky\n");
+        fflush(stdout);
+        exit(EXIT_FAILURE);
+    }
+    
+    int count = 0;
+    // Multiply values of kx by dkx
+    // Copy over values of kx to trunc_kx if thier absolute value is within the range of ks * tan(30 degrees).
+    // Also copy over the index of kx to kx_index
+    for ( size_t a = 0 ; a < file_rows ; a++ ) {
+
+        if ( fabs(kx[a] * dkx) <= ks * tand(30) ) {                          // 60 is beamwidth, 30 is half of it. 
+
+            trunc_kx[count] = kx[a] * dkx;
+            kx_index[count++] = a;
+        }            
+    }
+    trunc_kx[count] = nan("");                                               // terminate trunc_kx with NAN
+    num_trunc_kx = count - 1;                                                // -1 to exclude NAN 
+
+    count = 0;                                                               // Reset count for trunc_ky
+    // Multiply values of ky by dky
+    // Copy over values of ky to trunc_ky if thier absolute value is within the range of ks * tan(30 degrees).
+    // Also copy over the index of ky to ky_index
+    for ( size_t a = 0 ; a < file_cols ; a++ ) {
+
+        if ( fabs(ky[a] * dky) <= ks * tand(30) ) {                          // 60 is beamwidth, 30 is half of it.
+
+            trunc_ky[count] = ky[a] * dky;
+            ky_index[count++] = a;
+        }            
+    }
+    trunc_ky[count] = nan("");                                               // terminate trunc_ky with NAN
+    num_trunc_ky = count - 1;                                                // -1 to exclude NAN
+
+    // Free memory no longer needed
+    free(t_arr);
+    free(kx);
+    free(ky);
+
+    kz_3D = malloc(num_trunc_kx * num_trunc_ky * N * sizeof(*kz_3D));
+    part_kz_3D = malloc((N + 1) * sizeof(*part_kz_3D)); 
+    kz_1D = malloc(N * sizeof(*kz_1D)); 
+    if ( kz_3D == NULL || part_kz_3D == NULL || kz_1D == NULL ) {            // Check if memory allocation failed
+        perror("Error allocating memory for kz3D array(s)\n");
+        fflush(stdout);
+        exit(EXIT_FAILURE);
+    }
+
+    // Calculate center indices of kz_3D
+    center_kx = num_trunc_kx / 2;
+    center_ky = num_trunc_ky / 2;
+
+    // Fill in values for kz_3D, kz_1D, and part_kz_3D
+    for ( int k = 0 ; k < N ; k++ ) {
+        for ( int j = 0 ; j < num_trunc_ky ; j++ ) {
+            for ( int i = 0 ; i < num_trunc_kx ; i++ )
+                kz_3D[i + (j * num_trunc_kx) + (k * num_trunc_kx * num_trunc_ky)] = sqrt((Qt_arr[k]*Qt_arr[k]) - (trunc_kx[i] * trunc_kx[i]) - (trunc_ky[j] * trunc_ky[j]));
+        }
+
+        kz_1D[k] = (double) kz_3D[center_kx + (center_ky * num_trunc_kx) + (k * num_trunc_kx * num_trunc_ky)];
+        part_kz_3D[k] = kz_3D[(num_trunc_kx/2) + ((num_trunc_ky/2) * num_trunc_kx) + (k * num_trunc_kx * num_trunc_ky)];            
+    }
+    part_kz_3D[N] = nan("");                                                 // terminate part_kz_3D with NAN as the last element
 
 }
