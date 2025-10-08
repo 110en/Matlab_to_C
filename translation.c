@@ -124,6 +124,29 @@ int main(void) {
     double ele1_math;                                                        // Number used for element-wise math operations on t_arr
     double ele2_math;                                                        // Number used for element-wise math operations on t_arr
     double complex expo;                                                     // Exponential of the element-wise math operations on t_arr
+    
+    /**************************************/
+    /*           FFT Variables            */
+    /**************************************/
+
+    fftw_complex *fft_arr = NULL;                                            // Data array that has gone through fft 
+    fftw_complex *fft2_arr = NULL;                                           // Data array that has gone through fft twice
+    double Qt_arr[N] = {0};
+    double dkx;
+    double dky;
+    float ks = PI / STEP;
+    double *kx = NULL;                                                       // Length will be equivalent to file_rows
+    double *ky = NULL;                                                       // Length will be equivalent to file_cols
+    double *trunc_kx = NULL;                                                 // Column vector containing all the values of kx which are within range, terminated by NAN. 
+    double *trunc_ky = NULL;                                                 // Row vector containing all the values of ky which are within range, terminated by NAN.
+    int *kx_index = NULL;                                                    // Has all the indices of kx that were copied over to trunc_kx.
+    int *ky_index = NULL;                                                    // Has all the indices of ky that were copied over to trunc_ky.
+    int num_trunc_kx;                                                        // Length of trunc_kx
+    int num_trunc_ky;                                                        // Length of trunc_ky
+    int center_kx;                                                           // Row index of the center of kz_3D
+    int center_ky;                                                           // Column index of the center of kz_3D
+    float *kz_3D = NULL;
+    double *kz_1D = NULL;                                                    // A 1x1xN array that holds a slice of kz_3D at the very center index (center_kx, center_ky, :)
 
     /**************************************/
     /*     Acquiring Data from Files      */
